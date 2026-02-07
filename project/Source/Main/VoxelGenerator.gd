@@ -1,6 +1,5 @@
-class_name MeshGen, "res://Source/Assets/Textures/Blocks/stone.png"
+class_name VoxelGenerator, "res://Source/Assets/Textures/Blocks/stone.png"
 extends Reference
-
 
 static func create_textured_cube(size: Vector3, texture: Texture, pixelize: bool = false) -> ArrayMesh:
 	var st = SurfaceTool.new()
