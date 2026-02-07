@@ -1,7 +1,7 @@
 extends Spatial
 class_name world
 
-var entity: CameraFreeMovement
+var entity: PlayerController
 
 #var block: MeshInstance
 var chunks: chunk
@@ -18,7 +18,9 @@ func _ready():
 	
 	add_child(chunks)
 	
-	entity = CameraFreeMovement.new()
-	entity.camuscon.camera.current = true
+	entity = PlayerController.new()
 	
 	add_child(entity)
+	entity.translation = Vector3(8,16,8)
+	entity.camuscon.camera.current = true
+	

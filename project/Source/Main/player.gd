@@ -10,11 +10,20 @@ export(float) var gravity := 30.0 # Гравитация в воксельных
 
 # --- Состояние ---
 var velocity := Vector3.ZERO
-var snap_vector := Vector3.DOWN
+var camuscon: CameraMouseControl
+var collision: CollisionShape
 
 # --- Компоненты ---
 # Ссылка на узел, где висит твой CameraMouseControl
-onready var head = $Head 
+func _ready():
+	
+	camuscon = CameraMouseControl.new()
+	collision = CollisionShape.new()
+	collision.shape = BoxShape.new()
+	collision.scale = Vector3(1,1.8,0.5)
+	
+	add_child(collision)
+	add_child(camuscon)
 
 func _physics_process(delta: float):
 	# 1. Сброс горизонтальной скорости каждый кадр (Snappy movement)
@@ -28,14 +37,8 @@ func _physics_process(delta: float):
 	input_dir = input_dir.normalized()
 	
 	# 3. Ориентация относительно взгляда
-	var direction := Vector3.ZERO
-	if head:
-		# Берем базис головы (камеры)
-		var head_basis = head.global_transform.basis
-		# Проецируем на плоскость (игнорируем наклон камеры вверх/вниз для движения)
-		direction = (head_basis.x * input_dir.x + head_basis.z * input_dir.z)
-		direction.y = 0 # Гарантируем, что не летим вверх/вниз при взгляде
-		direction = direction.normalized()
+	
+	var direction = camuscon.get_global_direction2d(input_dir).normalized()
 	
 	# 4. Расчет скорости (Статика: Walk vs Sprint)
 	var current_speed = walk_speed
@@ -47,20 +50,14 @@ func _physics_process(delta: float):
 		velocity.x = direction.x * current_speed
 		velocity.z = direction.z * current_speed
 	
+	
+	velocity.y -= gravity * delta
 	# 5. Вертикальная физика (Гравитация)
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-		snap_vector = Vector3.ZERO # В воздухе не липнем
-	else:
-		snap_vector = Vector3.DOWN # На земле липнем к поверхностям
-		# Маленькая прижимная сила, чтобы is_on_floor() не мерцал на спусках
-		velocity.y = -1.0 
-		
+	if is_on_floor():
 		# 6. Прыжок (Только если на полу)
 		if Input.is_action_just_pressed("ui_select"): # Space
 			velocity.y = jump_force
-			snap_vector = Vector3.ZERO
 	
 	# 7. Финальное перемещение
 	# Используем move_and_slide_with_snap для корректной ходьбы по ступеням/склонам
-	velocity = move_and_slide_with_snap(velocity, snap_vector, Vector3.UP, true)
+	velocity = move_and_slide(velocity, Vector3.UP)
