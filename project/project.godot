@@ -20,9 +20,14 @@ _global_script_classes=[ {
 "path": "res://Source/Main/CameraMouseControl.gd"
 }, {
 "base": "Reference",
-"class": "MeshGen",
+"class": "VoxelGenerator",
 "language": "GDScript",
-"path": "res://Source/Main/MeshGen.gd"
+"path": "res://Source/Main/VoxelGenerator.gd"
+}, {
+"base": "StaticBody",
+"class": "chunk",
+"language": "GDScript",
+"path": "res://Source/Main/chunk.gd"
 }, {
 "base": "Spatial",
 "class": "world",
@@ -32,7 +37,8 @@ _global_script_classes=[ {
 _global_script_class_icons={
 "CameraFreeMovement": "",
 "CameraMouseControl": "",
-"MeshGen": "res://Source/Assets/Textures/Blocks/stone.png",
+"VoxelGenerator": "res://Source/Assets/Textures/Blocks/stone.png",
+"chunk": "",
 "world": ""
 }
 
