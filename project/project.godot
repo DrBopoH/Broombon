@@ -29,6 +29,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Source/Main/chunk.gd"
 }, {
+"base": "KinematicBody",
+"class": "PlayerController",
+"language": "GDScript",
+"path": "res://Source/Main/player.gd"
+}, {
 "base": "Spatial",
 "class": "world",
 "language": "GDScript",
@@ -37,8 +42,10 @@ _global_script_classes=[ {
 _global_script_class_icons={
 "CameraFreeMovement": "",
 "CameraMouseControl": "",
+
 "VoxelGenerator": "res://Source/Assets/Textures/Blocks/stone.png",
 "chunk": "",
+
 "world": ""
 }
 
@@ -47,6 +54,11 @@ _global_script_class_icons={
 config/name="Broombon"
 run/main_scene="res://Source/Assets/Data/main.tscn"
 config/icon="res://App/icon.png"
+
+[global]
+
+Langu=false
+Language=false
 
 [gui]
 
