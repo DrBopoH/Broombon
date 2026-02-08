@@ -1,15 +1,51 @@
 class_name chunk
 extends StaticBody
 
-const CHUNK_SIZE = 16
+const CHUNK_SIZE: int = 16
+var data: Dictionary
 
-var data = {}
-
-var texture_atlas: Texture
+var material_instance: ShaderMaterial
+var texture_paths: Array = [
+	"res://Source/Assets/Textures/Blocks/dirt.png",
+	"res://Source/Assets/Textures/Blocks/grass_carried.png",
+	"res://Source/Assets/Textures/Blocks/grass_side_carried.png",
+	"res://Source/Assets/Textures/Blocks/stone.png",
+	"res://Source/Assets/Textures/Blocks/gravel.png"
+]
 
 func _ready():
+	material_instance = ShaderMaterial.new()
+	material_instance.shader = load("res://Source/Assets/Data/VoxelShader.shader") # Укажи путь к шейдеру выше!
+	
+	var tex_arr = _create_texture_array(texture_paths)
+	material_instance.set_shader_param("texture_array", tex_arr)
+	
 	_generate_random_data()
 	_build_mesh()
+
+# Эта функция читает файлы и делает из них массив для видеокарты
+func _create_texture_array(paths: Array) -> TextureArray:
+	if paths.empty(): return null
+	
+	var first_img = load(paths[0]).get_data()
+	var width = first_img.get_width()
+	var height = first_img.get_height()
+	
+	var tex_arr = TextureArray.new()
+	tex_arr.create(width, height, paths.size(), first_img.get_format(), Texture.FLAG_MIPMAPS)
+	
+	for i in range(paths.size()):
+		var tex = load(paths[i])
+		if tex:
+			var img = tex.get_data()
+			# Важно: если текстуры разных размеров, игра упадет. Тут нужна проверка в реальном проекте.
+			if img.get_width() != width or img.get_height() != height:
+				push_error("Texture size mismatch: " + paths[i])
+				img.resize(width, height) # Аварийный ресайз
+			
+			tex_arr.set_layer_data(img, i)
+	
+	return tex_arr
 
 func _generate_random_data():
 	var noise = OpenSimplexNoise.new()
@@ -20,124 +56,111 @@ func _generate_random_data():
 		for z in range(CHUNK_SIZE):
 			var height = int((noise.get_noise_2d(x, z) + 1.0) * 4.0)
 			for y in range(height + 1):
-				data[Vector3(x, y, z)] = 1 if y < height else 2
+				# Логика блоков (ID теперь просто индекс в массиве путей)
+				# Допустим: 0 - земля, 1 - трава_верх, 2 - трава_бок, 3 - камень
+				if y == height:
+					data[Vector3(x, y, z)] = 1 # Трава (верх) - пока упрощенно
+				elif y > height - 3:
+					data[Vector3(x, y, z)] = 0 # Земля
+				else:
+					data[Vector3(x, y, z)] = 3 # Камень
 
 func _build_mesh():
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_material(material_instance) # Ставим наш шейдерный материал
 	
-	# Материал (можно загрузить свой)
-	var mat = SpatialMaterial.new()
-	# mat.albedo_texture = texture_atlas # Если есть атлас
-	mat.vertex_color_use_as_albedo = true # Будем красить вершины разным цветом для теста
-	st.set_material(mat)
-	
-	# Проходим по всем возможным позициям в чанке
 	for x in range(CHUNK_SIZE):
 		for y in range(CHUNK_SIZE):
 			for z in range(CHUNK_SIZE):
 				var pos = Vector3(x, y, z)
+				if not data.has(pos) or data[pos] == -1: 
+					continue # -1 = воздух
 				
-				# Если тут пусто (0 или нет в словаре) - пропускаем
-				if not data.has(pos) or data[pos] == 0:
-					continue
+				var base_id = data[pos]
 				
-				var block_id = data[pos]
-				
-				# === МАГИЯ ОТСЕЧЕНИЯ ===
-				# Проверяем 6 соседей. Рисуем грань, только если соседа НЕТ.
-				
-				# Верх (Y+)
-				if _is_transparent(x, y + 1, z):
-					_add_face(st, pos, Vector3.UP, block_id)
-				# Низ (Y-)
-				if _is_transparent(x, y - 1, z):
-					_add_face(st, pos, Vector3.DOWN, block_id)
-				# Лево (X-)
-				if _is_transparent(x - 1, y, z):
-					_add_face(st, pos, Vector3.LEFT, block_id)
-				# Право (X+)
-				if _is_transparent(x + 1, y, z):
-					_add_face(st, pos, Vector3.RIGHT, block_id)
-				# Перед (Z+)
-				if _is_transparent(x, y, z + 1):
-					_add_face(st, pos, Vector3.FORWARD, block_id)
-				# Зад (Z-)
-				if _is_transparent(x, y, z - 1):
-					_add_face(st, pos, Vector3.BACK, block_id)
-
-	# Генерируем нормали и создаем меш
-	st.generate_normals()
-	var mesh = st.commit()
+				if _is_transparent(x, y + 1, z): 
+					# Логика: Если это блок Травы(1), и мы рисуем ВЕРХ, берем текстуру 1.
+					# Если это блок Травы, и мы рисуем БОК, берем текстуру 2.
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.UP)
+					_add_face(st, pos, Vector3.UP, texture_id)
+					
+				if _is_transparent(x, y - 1, z): 
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.DOWN)
+					_add_face(st, pos, Vector3.DOWN, texture_id)
+					
+				if _is_transparent(x - 1, y, z): 
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.LEFT)
+					_add_face(st, pos, Vector3.LEFT, texture_id)
+					
+				if _is_transparent(x + 1, y, z): 
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.RIGHT)
+					_add_face(st, pos, Vector3.RIGHT, texture_id)
+					
+				if _is_transparent(x, y, z + 1): 
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.FORWARD)
+					_add_face(st, pos, Vector3.FORWARD, texture_id)
+					
+				if _is_transparent(x, y, z - 1): 
+					var texture_id = _get_texture_id_for_face(base_id, Vector3.BACK)
+					_add_face(st, pos, Vector3.BACK, texture_id)
 	
-	# Создаем MeshInstance внутри этого StaticBody
+	var mesh = st.commit()
 	var mesh_inst = MeshInstance.new()
 	mesh_inst.mesh = mesh
 	add_child(mesh_inst)
 	
-	# === ГЕНЕРАЦИЯ КОЛЛИЗИИ ===
-	# Самый простой способ для вокселей - создать trimesh shape из готового меша
+	# Коллизия
 	var shape = mesh.create_trimesh_shape()
-	var collision_owner = CollisionShape.new()
-	collision_owner.shape = shape
-	add_child(collision_owner)
+	var col = CollisionShape.new()
+	col.shape = shape
+	add_child(col)
 
-# Проверка: является ли блок прозрачным/воздухом?
 func _is_transparent(x, y, z) -> bool:
-	var neighbor_pos = Vector3(x, y, z)
-	
-	# Если координаты выходят за пределы чанка - считаем, что там воздух (пока что)
-	if x < 0 or x >= CHUNK_SIZE or y < 0 or y >= CHUNK_SIZE or z < 0 or z >= CHUNK_SIZE:
-		return true
-		
-	# Если в данных нет записи или там 0 - значит прозрачно
-	if not data.has(neighbor_pos) or data[neighbor_pos] == 0:
-		return true
-		
-	return false # Там твердый блок
+	# ... (код тот же)
+	return not data.has(Vector3(x, y, z)) # Упростил для примера
 
-# Функция добавления квадрата (упрощенная версия из прошлых ответов)
-func _add_face(st: SurfaceTool, pos: Vector3, dir: Vector3, id: int):
-	# Определяем цвет
-	var color = Color.brown if id == 1 else Color.gray
-	st.add_color(color)
+# Эта функция решает, какую картинку натянуть на конкретную сторону
+func _get_texture_id_for_face(block_id: int, face: Vector3) -> int:
+	if block_id == 1: 
+		if face == Vector3.UP: return 1   # grass_top.png
+		if face == Vector3.DOWN: return 0 # dirt.png
+		return 2                          # grass_side.png
 	
-	# Получаем смещения вершин для конкретной стороны света
-	# Порядок вершин СТРОГО: Низ-Лево -> Низ-Право -> Верх-Право -> Верх-Лево
-	# (Относительно взгляда на эту грань снаружи)
-	var verts = []
-	
-	# Используем match для выбора стороны. Это быстрее и надежнее математики.
-	match dir:
-		Vector3.FORWARD: # Z+ (Перед)
-			verts = [Vector3(0, 0, 1), Vector3(1, 0, 1), Vector3(1, 1, 1), Vector3(0, 1, 1)]
-		Vector3.BACK:    # Z- (Зад) - порядок X инвертирован, чтобы сохранить "лицо"
-			verts = [Vector3(1, 0, 0), Vector3(0, 0, 0), Vector3(0, 1, 0), Vector3(1, 1, 0)]
-		Vector3.RIGHT:   # X+ (Право)
-			verts = [Vector3(1, 0, 1), Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(1, 1, 1)]
-		Vector3.LEFT:    # X- (Лево)
-			verts = [Vector3(0, 0, 0), Vector3(0, 0, 1), Vector3(0, 1, 1), Vector3(0, 1, 0)]
-		Vector3.UP:      # Y+ (Верх)
-			verts = [Vector3(0, 1, 1), Vector3(1, 1, 1), Vector3(1, 1, 0), Vector3(0, 1, 0)]
-		Vector3.DOWN:    # Y- (Низ)
-			verts = [Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1)]
+	return block_id
 
-	# Добавляем позицию блока к смещениям
-	var p1 = pos + verts[0] # Низ-Лево
-	var p2 = pos + verts[1] # Низ-Право
-	var p3 = pos + verts[2] # Верх-Право
-	var p4 = pos + verts[3] # Верх-Лево
+func _add_face(st: SurfaceTool, pos: Vector3, dir: Vector3, texture_id: int):
+	var encoded_id = float(texture_id) / 255.0
+	st.add_color(Color(encoded_id, 0, 0, 1))
 	
-	# Явно указываем нормаль (SurfaceTool иногда ошибается при генерации)
 	st.add_normal(dir)
 	
-	# Строим два треугольника (порядок: Против Часовой Стрелки)
-	# 1-й треугольник
-	st.add_vertex(p1)
-	st.add_vertex(p3)
-	st.add_vertex(p2)
+	var verts: Array
+	match dir:
+		Vector3.FORWARD: # +Z
+			verts = [Vector3(0, 0, 1), Vector3(0, 1, 1), Vector3(1, 1, 1), Vector3(1, 0, 1)]
+		Vector3.BACK: # -Z
+			verts = [Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(0, 1, 0), Vector3(0, 0, 0)]
+		Vector3.RIGHT: # +X
+			verts = [Vector3(1, 0, 1), Vector3(1, 1, 1), Vector3(1, 1, 0), Vector3(1, 0, 0)]
+		Vector3.LEFT: # -X
+			verts = [Vector3(0, 0, 0), Vector3(0, 1, 0), Vector3(0, 1, 1), Vector3(0, 0, 1)]
+		Vector3.UP: # +Y
+			verts = [Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(0, 1, 1)]
+		Vector3.DOWN: # -Y
+			verts = [Vector3(0, 0, 1), Vector3(1, 0, 1), Vector3(1, 0, 0), Vector3(0, 0, 0)]
 	
-	# 2-й треугольник
-	st.add_vertex(p1)
-	st.add_vertex(p4)
-	st.add_vertex(p3)
+	var uvs: Array
+	match dir:
+		Vector3.LEFT, Vector3.RIGHT: # X-грани: вертикаль = Y
+			uvs = [Vector2(1, 1), Vector2(1, 0), Vector2(0, 0), Vector2(0, 1)]
+		Vector3.FORWARD, Vector3.BACK: # Z-грани: вертикаль = Y
+			uvs = [Vector2(0, 1), Vector2(0, 0), Vector2(1, 0), Vector2(1, 1)]
+		Vector3.UP, Vector3.DOWN: # горизонтальные — обычная раскладка
+			uvs = [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+	
+	var indices = [0, 1, 2, 0, 2, 3]
+	
+	for i in indices:
+		st.add_uv(uvs[i])
+		st.add_vertex(pos + verts[i])
