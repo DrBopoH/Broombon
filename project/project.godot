@@ -20,6 +20,16 @@ _global_script_classes=[ {
 "path": "res://Source/Main/CameraMouseControl.gd"
 }, {
 "base": "Reference",
+"class": "MeshGen",
+"language": "GDScript",
+"path": "res://Source/Main/MeshGen.gd"
+}, {
+"base": "KinematicBody",
+"class": "PlayerController",
+"language": "GDScript",
+"path": "res://Source/Main/player.gd"
+}, {
+"base": "Reference",
 "class": "VoxelGenerator",
 "language": "GDScript",
 "path": "res://Source/Main/VoxelGenerator.gd"
@@ -29,11 +39,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Source/Main/chunk.gd"
 }, {
-"base": "KinematicBody",
-"class": "PlayerController",
-"language": "GDScript",
-"path": "res://Source/Main/player.gd"
-}, {
 "base": "Spatial",
 "class": "world",
 "language": "GDScript",
@@ -42,10 +47,10 @@ _global_script_classes=[ {
 _global_script_class_icons={
 "CameraFreeMovement": "",
 "CameraMouseControl": "",
-
+"MeshGen": "res://Source/Assets/Textures/Blocks/stone.png",
+"PlayerController": "",
 "VoxelGenerator": "res://Source/Assets/Textures/Blocks/stone.png",
 "chunk": "",
-
 "world": ""
 }
 
