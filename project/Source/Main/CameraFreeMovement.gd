@@ -1,7 +1,7 @@
 extends KinematicBody
 class_name CameraFreeMovement
 
-export(float, 0.01, 100.0) var speed := 1.0
+export(int, 1, 10000) var speed := 300
 
 var camuscon: CameraMouseControl = CameraMouseControl.new()
 var direction: Vector3
@@ -24,4 +24,4 @@ func _physics_process(delta):
 	velocity += Vector3.UP*direction.y
 	velocity.normalized()
 	
-	move_and_slide(velocity*speed, Vector3.UP)
+	move_and_slide(velocity*speed*delta, Vector3.UP)
