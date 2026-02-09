@@ -9,49 +9,79 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "Reference",
+"class": "CameraControl",
+"language": "GDScript",
+"path": "res://Source/Main/CameraControl.gd"
+}, {
 "base": "KinematicBody",
 "class": "CameraFreeMovement",
 "language": "GDScript",
 "path": "res://Source/Main/CameraFreeMovement.gd"
 }, {
-"base": "Position3D",
-"class": "CameraMouseControl",
+"base": "StaticBody",
+"class": "Chunk",
 "language": "GDScript",
-"path": "res://Source/Main/CameraMouseControl.gd"
+"path": "res://Source/Main/Chunk.gd"
 }, {
-"base": "Reference",
-"class": "MeshGen",
+"base": "Node",
+"class": "ClientServer",
 "language": "GDScript",
-"path": "res://Source/Main/MeshGen.gd"
+"path": "res://Source/Main/ClientServer.gd"
 }, {
 "base": "KinematicBody",
-"class": "PlayerController",
+"class": "Entity",
 "language": "GDScript",
-"path": "res://Source/Main/player.gd"
+"path": "res://Source/Main/Entity.gd"
+}, {
+"base": "MeshInstance",
+"class": "HeadCamera",
+"language": "GDScript",
+"path": "res://Source/Main/HeadCamera.gd"
+}, {
+"base": "Reference",
+"class": "InputListener",
+"language": "GDScript",
+"path": "res://Source/Main/InputListener.gd"
+}, {
+"base": "Reference",
+"class": "MouseControl",
+"language": "GDScript",
+"path": "res://Source/Main/MouseControl.gd"
+}, {
+"base": "Node",
+"class": "PhysicServer",
+"language": "GDScript",
+"path": "res://Source/Main/PhysicServer.gd"
+}, {
+"base": "Reference",
+"class": "Player",
+"language": "GDScript",
+"path": "res://Source/Main/Player.gd"
+}, {
+"base": "Spatial",
+"class": "Terrain",
+"language": "GDScript",
+"path": "res://Source/Main/Terrain.gd"
 }, {
 "base": "Reference",
 "class": "VoxelGenerator",
 "language": "GDScript",
 "path": "res://Source/Main/VoxelGenerator.gd"
-}, {
-"base": "StaticBody",
-"class": "chunk",
-"language": "GDScript",
-"path": "res://Source/Main/chunk.gd"
-}, {
-"base": "Spatial",
-"class": "world",
-"language": "GDScript",
-"path": "res://Source/Main/world.gd"
 } ]
 _global_script_class_icons={
+"CameraControl": "",
 "CameraFreeMovement": "",
-"CameraMouseControl": "",
-"MeshGen": "res://Source/Assets/Textures/Blocks/stone.png",
-"PlayerController": "",
-"VoxelGenerator": "res://Source/Assets/Textures/Blocks/stone.png",
-"chunk": "",
-"world": ""
+"Chunk": "",
+"ClientServer": "",
+"Entity": "",
+"HeadCamera": "",
+"InputListener": "",
+"MouseControl": "",
+"PhysicServer": "",
+"Player": "",
+"Terrain": "",
+"VoxelGenerator": "res://Source/Assets/Textures/Blocks/stone.png"
 }
 
 [application]
@@ -59,11 +89,6 @@ _global_script_class_icons={
 config/name="Broombon"
 run/main_scene="res://Source/Assets/Data/main.tscn"
 config/icon="res://App/icon.png"
-
-[global]
-
-Langu=false
-Language=false
 
 [gui]
 

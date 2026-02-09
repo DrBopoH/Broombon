@@ -1,4 +1,4 @@
-class_name chunk
+class_name Chunk
 extends StaticBody
 
 const CHUNK_SIZE: int = 16
